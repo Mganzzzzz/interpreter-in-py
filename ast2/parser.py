@@ -3,13 +3,14 @@ from typing import List
 
 from ast2.object import Statement, Program, FunctionDecl, FunctionBody, Expression, FunctionParameter, FunctionCall
 from token2 import Token
+from tokenizer import Tokenizer
 from type import TokenType
 
 
 @dataclass()
 class AstParser:
     """"""
-    tokenList: List[Token]
+    tokenizer: Tokenizer
     program: Program = field(default_factory=list)
     statement: List[Statement] = field(default_factory=list)
     index: int = 0
@@ -17,42 +18,44 @@ class AstParser:
     @property
     def token(self) -> Token | None:
         try:
-            return self.tokenList[self.index]
+            return self.tokenizer.current()
         except:
             return None
 
     def peek(self) -> Token | None:
-        if self.index < len(self.tokenList):
-            return self.tokenList[self.index + 1]
+        old_pos = self.tokenizer.position()
+        ret = self.tokenizer.next()
+        self.tokenizer.trace_back(old_pos)
+        return ret
 
     def next(self) -> Token | None:
-        if self.index < len(self.tokenList):
-            self.index += 1
-        return None
+        return self.tokenizer.next()
 
     def parse_func_decl(self) -> FunctionDecl | None:
-        funcBody: FunctionBody
+        func_body: FunctionBody
         token = self.token
-        funcName: Token
+        func_name: Token
 
+        old_pos = self.tokenizer.position()
         if not token:
             return None
         if token.type == TokenType.Identifier and token.raw == 'function':
             self.next()
-            funcName = self.token
+            func_name = self.token
             self.next()
             self.next()
-            funcBody = self.parse_func_body()
+            func_body = self.parse_func_body()
         else:
+            self.tokenizer.trace_back(old_pos)
             return None
-        return FunctionDecl(funcName, funcBody)
+        return FunctionDecl(func_name, func_body)
 
     def parse_func_body(self) -> FunctionBody | None:
         sm: List[Statement] = []
         while self.token.type != TokenType.RightBrace:
-            functionCall = self.parse_func_call()
-            if functionCall:
-                sm.append(functionCall)
+            function_call = self.parse_func_call()
+            if function_call:
+                sm.append(function_call)
                 continue
             self.next()
         self.next()
@@ -62,7 +65,7 @@ class AstParser:
         if self.token.type != TokenType.Identifier:
             return None
 
-        funcName = self.token
+        func_name = self.token
         params: FunctionParameter | None
         self.next()
         t = self.token
@@ -72,7 +75,7 @@ class AstParser:
             raise Exception('function should call with ()')
 
         ref = self.find_function_decl()
-        r = FunctionCall(funcName, ref, params)
+        r = FunctionCall(func_name, ref, params)
         return r
 
     def parse_func_params(self):

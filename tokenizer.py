@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 from enum import Enum
 
@@ -11,6 +11,7 @@ from utility import is_operator
 class Tokenizer:
     source: str
     i: int = 0
+    token_list: List[Token] = field(default_factory=list)
 
     @property
     def letter(self) -> str | None:
@@ -59,6 +60,8 @@ class Tokenizer:
 
             if c is None:
                 break
+        self.token_list = m
+        self.i = 0
         return m
 
     def parse_operator(self):
@@ -97,6 +100,7 @@ class Tokenizer:
             self.next_letter()
             c = self.letter
         ret = Token(s, TokenType.Identifier)
+
         return ret
 
     def parse_stringliteral(self):
@@ -144,3 +148,25 @@ class Tokenizer:
             self.next_letter()
             return Token(';', TokenType.Semicolon)
         return None
+
+    def current(self):
+        try:
+            return self.token_list[self.i]
+        except:
+            return None
+
+    def position(self):
+        return self.i
+
+    def next(self):
+        try:
+            if self.i < len(self.token_list):
+                self.i += 1
+                return self.token_list[self.i]
+            else:
+                return None
+        except:
+            return None
+
+    def trace_back(self, index: int):
+        self.i = index

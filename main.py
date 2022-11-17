@@ -6,10 +6,8 @@ if __name__ == '__main__':
     with open('source.txt') as f:
         content = f.read()
         tokenizer = Tokenizer(content)
-        tokens = tokenizer.parse()
-        print(tokens)
-        ast = AstParser(tokenList=tokens)
+        tokenizer.parse()
+        ast = AstParser(tokenizer)
         astTree = ast.parse_program()
-        print(astTree)
         programExec = Executor(astTree)
         programExec.exec()
